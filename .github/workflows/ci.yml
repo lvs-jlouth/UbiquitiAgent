@@ -10,6 +10,8 @@ jobs:
   backend-lint:
     name: Backend Lint & Type Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: backend
@@ -34,6 +36,8 @@ jobs:
   backend-test:
     name: Backend Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: backend
@@ -42,7 +46,7 @@ jobs:
         image: postgres:16-alpine
         env:
           POSTGRES_USER: ubiquiti
-          POSTGRES_PASSWORD: ubiquiti_password
+          POSTGRES_PASSWORD: ubiquiti_ci
           POSTGRES_DB: ubiquitiagent_test
         ports:
           - 5432:5432
@@ -66,7 +70,11 @@ jobs:
 
       - name: Run tests with coverage
         env:
-          DATABASE_URL: ******localhost:5432/ubiquitiagent_test
+          DB_USER: ubiquiti
+          DB_PASSWORD: ubiquiti_ci
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: ubiquitiagent_test
           SECRET_KEY: test-secret-key-for-ci
           OPENAI_API_KEY: ""
           OPERATING_MODE: read_only
@@ -88,6 +96,8 @@ jobs:
   frontend-build:
     name: Frontend Build & Lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: frontend
@@ -115,6 +125,8 @@ jobs:
   docker-compose-validate:
     name: Docker Compose Validation
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 

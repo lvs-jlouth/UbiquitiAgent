@@ -75,7 +75,7 @@ async def request_context_middleware(request: Request, call_next):
         logger.error("unhandled_exception", error=str(exc), path=request.url.path)
         response = JSONResponse(
             status_code=500,
-            content={"error": "Internal Server Error", "detail": str(exc)},
+            content={"error": "Internal Server Error"},
         )
     finally:
         request_id_ctx.reset(req_token)

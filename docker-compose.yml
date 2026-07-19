@@ -6,7 +6,7 @@ services:
     container_name: ubiquiti_db
     environment:
       POSTGRES_USER: ubiquiti
-      POSTGRES_PASSWORD: ubiquiti_password
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ubiquiti_dev}
       POSTGRES_DB: ubiquitiagent
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -25,7 +25,11 @@ services:
       dockerfile: Dockerfile
     container_name: ubiquiti_backend
     environment:
-      - DATABASE_URL=******db:5432/ubiquitiagent
+      - DB_USER=ubiquiti
+      - DB_PASSWORD=${DB_PASSWORD:-ubiquiti_dev}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=ubiquitiagent
       - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}

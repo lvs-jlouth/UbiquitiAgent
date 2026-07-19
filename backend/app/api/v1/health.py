@@ -27,8 +27,8 @@ async def health_detailed(request: Request, db: AsyncSession = Depends(get_db)) 
     db_status = "ok"
     try:
         await db.execute(text("SELECT 1"))
-    except Exception as exc:  # noqa: BLE001
-        db_status = f"error: {exc}"
+    except Exception:  # noqa: BLE001
+        db_status = "error"
 
     scheduler = getattr(request.app.state, "scheduler", None)
     scheduler_status = "stopped"

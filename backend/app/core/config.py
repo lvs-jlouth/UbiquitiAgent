@@ -1,4 +1,5 @@
 """Application configuration using pydantic-settings."""
+from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,8 +10,25 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
 
-    # Database
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/ubiquitiagent"
+    # Database – supply DATABASE_URL directly OR individual components
+    DB_USER: str = "ubiquiti"
+    DB_PASSWORD: str = "ubiquiti"
+    DB_HOST: str = "localhost"
+    DB_PORT: int = 5432
+    DB_NAME: str = "ubiquitiagent"
+    # Override the entire URL at once if preferred (e.g. in tests or Docker)
+    DATABASE_URL: str = ""
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def effective_database_url(self) -> str:
+        """Return DATABASE_URL if set, otherwise build from components."""
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        return (
+            f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}"
+            f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        )
 
     # Security
     SECRET_KEY: str = "change-me-in-production"
