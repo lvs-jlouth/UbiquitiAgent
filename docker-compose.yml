@@ -1,0 +1,82 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ubiquiti_db
+    environment:
+      POSTGRES_USER: ubiquiti
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ubiquiti_dev}
+      POSTGRES_DB: ubiquitiagent
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ubiquiti -d ubiquitiagent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ubiquiti_backend
+    environment:
+      - DB_USER=ubiquiti
+      - DB_PASSWORD=${DB_PASSWORD:-ubiquiti_dev}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=ubiquitiagent
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+      - UNIFI_HOST=${UNIFI_HOST:-}
+      - UNIFI_PORT=${UNIFI_PORT:-443}
+      - UNIFI_USERNAME=${UNIFI_USERNAME:-}
+      - UNIFI_PASSWORD=${UNIFI_PASSWORD:-}
+      - UNIFI_SITE=${UNIFI_SITE:-default}
+      - UNIFI_VERIFY_SSL=${UNIFI_VERIFY_SSL:-false}
+      - OPERATING_MODE=${OPERATING_MODE:-read_only}
+      - TELEMETRY_INTERVAL_SECONDS=${TELEMETRY_INTERVAL_SECONDS:-60}
+      - DEBUG=${DEBUG:-false}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ubiquiti_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://backend:8000/api/v1
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  default:
+    name: ubiquiti_network
